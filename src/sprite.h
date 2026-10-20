@@ -1,24 +1,35 @@
 #ifndef SPRITE_H
 #define SPRITE_H
 
+#include <array>
+
 #include "basic_transform.h"
 #include <SFML/Graphics.hpp>
 #include <SFML/System.hpp>
-
 class Sprite {  // could derive from sf::Drawable if you're willing to pay for a vptr, but not
                 // necessary.
 public:
     Sprite(const sf::Texture& texture) {
-        // TODO
+        mTexture = &texture;
+        mMinPointTex = {0, 0};
+        mMaxPointTex = sf::Vector2f(texture.getSize());
+        mVertexArray.setPrimitiveType(sf::PrimitiveType::Triangles);
+        recomputeVertexArray();
     }
 
     Sprite(const sf::Texture& texture, const sf::Vector2f& texMinPoint,
            const sf::Vector2f& texMaxPoint) {
-        // TODO
+        mTexture = &texture;
+        mMinPointTex = texMinPoint;
+        mMaxPointTex = texMaxPoint;
+        mVertexArray.setPrimitiveType(sf::PrimitiveType::Triangles);
+        recomputeVertexArray();
     }
 
     void draw(sf::RenderTarget& target, sf::RenderStates states) const {
-        // TODO
+        states.texture = mTexture;
+        recomputeVertexArray();
+        target.draw(mVertexArray, states);
     }
 
     sf::Vector2f& position() { return mTransform.translation; }
@@ -34,12 +45,20 @@ private:
     //     ranging from [0, 1] in both dimensions.
     //   - the next 3 correspond to the vertices of the bottom-right triangle. of the default
     //     rectangle.
-    static constexpr std::array<sf::Vector2f, 6> DEFAULT_VERTICES = {};  // TODO
+    static constexpr std::array<sf::Vector2f, 6> DEFAULT_VERTICES = {
+        sf::Vector2f{0, 0}, {0, 1}, {1, 1}, {0, 0}, {1, 1}, {1, 0}};  // TODO
 
     // if mTexture is valid, recomputes the positions and coords of sf::Vertex for each
     // of 6 possible entries in mVertexArray.
     void recomputeVertexArray() const {
         // TODO
+        const sf::Vector2f size = mMaxPointTex - mMinPointTex;
+        mVertexArray.clear();
+        for (const sf::Vector2f& d : DEFAULT_VERTICES) {
+            sf::Vector2f uv = mMinPointTex + d * size;
+            sf::Vector2f position = mTransform.applyPoint(d * size - mOrigin);
+            mVertexArray.append({position, sf::Color::White, uv});
+        }
     }
 
     const sf::Texture* mTexture;
